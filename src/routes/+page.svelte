@@ -1,12 +1,17 @@
 <script>
+    // Define um objeto 'resultado' para armazenar a rota, melhor fitness, histórico e status
     let resultado = {rota: null, melhorFitness: null, historico: [], status: null};
+
+    // Declara arrays para a população inicial e matriz de distâncias
     let populacaoInicial = [];
     let matrizDistancias = [];
 
+    // Função para criar um atraso de execução
     function delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    // Função para calcular o fitness de um indivíduo baseado nas distâncias
     function calcularFitness(individuo, distancias) {
         let distanciaTotal = 0;
         for (let i = 0; i < individuo.length - 1; i++) {
@@ -16,6 +21,7 @@
         return 1 / distanciaTotal;
     }
 
+    // Função para criar a população inicial de indivíduos (caminhos)
     function criarPopulacaoInicial(tamanhoPopulacao, numCidades) {
         const populacao = new Set();
         while (populacao.size < tamanhoPopulacao) {
@@ -23,13 +29,13 @@
             for (let j = 0; j < numCidades; j++) {
                 individuo.push(j);
             }
-            shuffle(individuo);
+            shuffle(individuo); // Embaralha os indivíduos para criar diferentes caminhos
             populacao.add(individuo.join(','));
         }
         return Array.from(populacao).map(individuo => individuo.split(',').map(Number));
     }
 
-
+    // Função de seleção por torneio para escolher o melhor indivíduo
     function selecaoTorneio(populacao, distancias, tamanhoTorneio) {
         let vencedor = null;
         for (let i = 0; i < tamanhoTorneio; i++) {
@@ -41,32 +47,24 @@
         return vencedor;
     }
 
+    // Função para realizar o cruzamento entre dois indivíduos
     function cruzamento(pai1, pai2, usarCorteAleatorio = true, pontoDeCorteFixo = 3) {
         let ponto;
-
-        // Define o ponto de corte
         if (usarCorteAleatorio) {
             ponto = Math.floor(Math.random() * pai1.length);
         } else {
             ponto = pontoDeCorteFixo;
         }
-
-        // Cria o filho pegando os genes do pai1 desde o início até o ponto de corte
         const filho = pai1.slice(0, ponto);
-
-        // Itera através dos genes do pai2
         for (const gene of pai2) {
-            // Se o gene do pai2 não está ainda no filho, adiciona-o ao filho
             if (!filho.includes(gene)) {
                 filho.push(gene);
             }
         }
-
-        // Retorna o novo indivíduo (filho) resultante do cruzamento
         return filho;
     }
 
-
+    // Função para mutar um indivíduo trocando dois pontos aleatórios
     function mutacao(individuo) {
         const ponto1 = Math.floor(Math.random() * individuo.length);
         let ponto2 = Math.floor(Math.random() * individuo.length);
@@ -79,17 +77,13 @@
 
     // Função para embaralhar um array usando o algoritmo de Fisher-Yates
     function shuffle(array) {
-        // Itera do final do array até o início
         for (let i = array.length - 1; i > 0; i--) {
-            // Seleciona um índice aleatório entre 0 e i (inclusivo)
             const j = Math.floor(Math.random() * (i + 1));
-
-            // Troca os elementos nos índices i e j
             [array[i], array[j]] = [array[j], array[i]];
         }
     }
 
-
+    // Função para ler dados de um arquivo e transformar em matriz de distâncias
     function lerDadosDeArquivo(arquivo) {
         return new Promise((resolve, reject) => {
             const leitor = new FileReader();
@@ -109,6 +103,7 @@
         });
     }
 
+    // Função principal para resolver o problema do caixeiro viajante
     async function resolverCaixeiroViajante(distancias, tamanhoPopulacao, numGeracoes, taxaMutacao, fitnessIdeal) {
         const numCidades = distancias.length;
         populacaoInicial = criarPopulacaoInicial(tamanhoPopulacao, numCidades);
@@ -120,10 +115,10 @@
             for (let j = 0; j < tamanhoPopulacao; j++) {
                 const pai1 = selecaoTorneio(populacaoInicial, distancias, 2);
                 const pai2 = selecaoTorneio(populacaoInicial, distancias, 2);
-                let filho = cruzamento(pai1, pai2, true); // Assumindo que usarCorteAleatorio é true
+                let filho = cruzamento(pai1, pai2, true);
 
                 torneios.push({
-                    pai1: populacaoInicial.indexOf(pai1), // Índice +1 para identificar o indivíduo
+                    pai1: populacaoInicial.indexOf(pai1),
                     pai2: populacaoInicial.indexOf(pai2),
                     filho: filho.slice(),
                 });
@@ -132,46 +127,33 @@
                     filho = mutacao(filho);
                 }
                 novaPopulacao.push(filho);
-
-
             }
             populacaoInicial = novaPopulacao;
 
-
             for (const individuo of populacaoInicial) {
                 const fitness = calcularFitness(individuo, distancias);
-
                 if (fitness > resultado.melhorFitness) {
                     resultado.melhorFitness = fitness;
                     resultado.rota = individuo;
                 }
             }
 
-            // Armazenar o estado da geração atual no histórico
             resultado.historico = [...resultado.historico, {
                 geracao: i + 1,
                 populacao: novaPopulacao.map((ind, index) => ({
                     individuo: index + 1,
-                    cidades: ind, // Adicionando 1 para representar a cidade corretamente
+                    cidades: ind,
                     fitness: calcularFitness(ind, distancias),
                 })),
                 torneios: torneios,
-                // melhorRota: rota.slice(),
                 melhorDistancia: 1 / resultado.melhorFitness
-            }]
+            }];
 
-            // // Verificar se o fitness ideal foi atingido
-            // if (1 / resultado.melhorFitness <= fitnessIdeal) {
-            //     console.log(`Parou na geração ${i + 1} com fitness ${1 / resultado.melhorFitness}`);
-            //     return {rota: rota, distancia: 1 / melhorFitness, historico: historico};
-            // }
-
-            // Esperar 500 milissegundos antes de iniciar a próxima iteração
             await delay(500);
         }
     }
 
-
+    // Função para iniciar a resolução dos problemas lendo o arquivo de entrada
     async function resolverProblemas() {
         const arquivo = document.getElementById('fileInput').files[0];
         if (arquivo) {
@@ -196,33 +178,38 @@
     }
 </script>
 
+<!-- Interface do usuário para selecionar o arquivo e iniciar a resolução -->
 <div class="tw-flex tw-flex-row tw-gap-4 tw-justify-center tw-items-center tw-py-8">
     <input type="file" id="fileInput" accept=".txt,.csv">
     <button on:click={resolverProblemas} class="tw-px-4 tw-py-2 !tw-h-fit">Resolver Problemas</button>
 </div>
 
+<!-- Exibição dos resultados e histórico -->
+
 <div>
     {#if resultado.status}
-        <div class="tw-border tw-rounded-md">
+        <div class="tw-border tw-rounded-md tw-p-4">
             <span>Status: {resultado.status.toUpperCase()}</span>
-            <h1>Resultado:</h1>
-            <div>
-                <p>Melhor rota:</p>
-                <table>
-                    <tr>
-                        {#each resultado.rota as gene}
-                            <td>{gene}</td>
-                        {/each}
-                        <td>{resultado.melhorFitness}</td>
-                    </tr>
-                </table>
-            </div>
+            {#if resultado.status === 'calculado'}
+                <h1>Resultado:</h1>
+                <div>
+                    <p>Melhor rota:</p>
+                    <table class="tw-border tw-rounded tw-text-center">
+                        <tr>
+                            {#each resultado.rota as gene}
+                                <td>{gene}</td>
+                            {/each}
+                            <td>{resultado.melhorFitness}</td>
+                        </tr>
+                    </table>
+                </div>
+            {/if}
         </div>
-        <details class="pico-background-zinc-150">
+        <details class="pico-background-zinc-150 tw-mt-4">
             <summary>População inicial:</summary>
             <div>
                 <p>População:</p>
-                <table>
+                <table class="tw-border tw-rounded tw-text-center">
                     {#each populacaoInicial as populacao}
                         <tr>
                             {#each populacao as gene}
@@ -236,12 +223,12 @@
             </div>
         </details>
         {#each resultado?.historico as historico}
-            <details class="pico-background-zinc-150">
+            <details class="pico-background-zinc-150 tw-mt-4">
                 <summary>Geração: {historico.geracao}</summary>
                 <div>
                     <p>População:</p>
-                    {#each historico.populacao as individuo}
-                        <table>
+                    <table class="tw-border tw-rounded tw-text-center">
+                        {#each historico.populacao as individuo}
                             <tr>
                                 {#each individuo.cidades as cidade}
                                     <td>{cidade}</td>
@@ -250,14 +237,13 @@
                                     {individuo.fitness.toFixed(4)}
                                 </td>
                             </tr>
-
-                        </table>
-                    {/each}
+                        {/each}
+                    </table>
                 </div>
                 <div>
                     <p>Torneios:</p>
-                    {#each historico.torneios as individuo}
-                        <table>
+                    <table class="tw-border tw-rounded tw-text-center">
+                        {#each historico.torneios as individuo}
                             <tr>
                                 <td>Pai 1</td>
                                 <td>Pai 2</td>
@@ -272,8 +258,8 @@
                                 {/each}
                             </tr>
 
-                        </table>
-                    {/each}
+                        {/each}
+                    </table>
                 </div>
             </details>
         {/each}

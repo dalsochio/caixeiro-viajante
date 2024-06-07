@@ -3,7 +3,7 @@
 </script>
 
 <div class="app">
-	<main class="container">
+	<main class="tw-container tw-mx-auto">
 		<slot />
 	</main>
 </div>
