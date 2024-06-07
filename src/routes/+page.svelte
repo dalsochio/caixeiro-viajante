@@ -1,4 +1,8 @@
 <script>
+    const numGeracoes = 5; // Ajuste conforme necessário
+    const tamanhoPopulacao = 5; // Ajuste conforme necessário
+    const taxaMutacao = 0.01; // Ajuste conforme necessário
+
     // Define um objeto 'resultado' para armazenar a rota, melhor fitness, histórico e status
     let resultado = {rota: null, melhorFitness: null, historico: [], status: null};
 
@@ -104,7 +108,7 @@
     }
 
     // Função principal para resolver o problema do caixeiro viajante
-    async function resolverCaixeiroViajante(distancias, tamanhoPopulacao, numGeracoes, taxaMutacao, fitnessIdeal) {
+    async function resolverCaixeiroViajante(distancias, tamanhoPopulacao, numGeracoes, taxaMutacao) {
         const numCidades = distancias.length;
         populacaoInicial = criarPopulacaoInicial(tamanhoPopulacao, numCidades);
 
@@ -163,13 +167,9 @@
                 matrizDistancias = [];
 
                 matrizDistancias = await lerDadosDeArquivo(arquivo);
-                const tamanhoPopulacao = 5; // Ajuste conforme necessário
-                const numGeracoes = 5; // Ajuste conforme necessário
-                const taxaMutacao = 0.01; // Ajuste conforme necessário
-                const fitnessIdeal = 10; // Ajuste conforme necessário
 
                 resultado.status = 'calculando';
-                await resolverCaixeiroViajante(matrizDistancias, tamanhoPopulacao, numGeracoes, taxaMutacao, fitnessIdeal);
+                await resolverCaixeiroViajante(matrizDistancias, tamanhoPopulacao, numGeracoes, taxaMutacao);
                 resultado.status = 'calculado';
             } catch (erro) {
                 console.error('Erro ao ler o arquivo:', erro);
